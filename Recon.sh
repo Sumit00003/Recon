@@ -77,6 +77,20 @@ info "Alive hosts: $(wc -l < "$output/alive_sub-domain.txt")\n"
 # ---------------------------
 # 3. Httpx Scan
 # ---------------------------
+ok "Running Github Tool Httpx...\n"
+/home/kali/Tools/Httpx/httpx \
+    -silent \
+    -sc \
+    -title \
+    -server \
+    -cdn \
+    -method \
+    -nc \
+    -rl 20 \
+    -l "$output/alive_sub-domain.txt" \
+    > "$output/httpx.txt"
+
+: << 'COMMENT'
 mkdir -p "$output/httpx"
 ok "Running Github Tool Httpx..."
 info "Status Code"
@@ -120,12 +134,14 @@ else
     err "No Additional Methods Found\n"
     rm "$output/httpx/http_method.txt"
 fi
+COMMENT
 # ---------------------------
 # 4. Waybackurls
 # ---------------------------
 
 ok "Fetching historical URLs (waybackurls)..."
-cat "$output/alive_sub-domain.txt" | waybackurls > "$output/waybackurls.txt"
+cat "$output/alive_sub-domain.txt" | waybackurls > "$output/waybackurl.txt"
+cat "$output/waybackurl.txt" | sort -u > "$output/waybackurls.txt"
 ok "WayBackurls: $(wc -l < "$output/waybackurls.txt")"
 if [ -s "$output/waybackurls.txt" ]; then
     info "Waybackurls retrieved\n"
@@ -134,7 +150,7 @@ if [ -s "$output/waybackurls.txt" ]; then
 else
     err "No Wayback urls"
 fi
-
+rm "$output/waybackurl.txt"
 # ---------------------------
 # 5. Subdomain Takeover Scan
 # ---------------------------
@@ -143,9 +159,9 @@ ok "Checking for Subdomain Takeover (subzy)..."
 subzy run --targets "$output/all_subs.txt" > "$output/subzy.txt"
 rm $output/all_subs.txt
 if grep -q "DISCUSSION" "$output/subzy.txt"; then
-    info "[***] Found Vuln Subdomains...\n"
+    info "Found Vuln Subdomains...\n"
 else
-    err "[-] No Subdomains is Vulnerable\n"
+    err "No Subdomains is Vulnerable\n"
 fi
 # ---------------------------
 # 6. Crawling with Katana
@@ -154,7 +170,7 @@ fi
 ok "Running Katana crawler..."
 katana -list "$output/alive_sub-domain.txt" -silent > "$output/katana.txt"
 if [ -s "$output/katana.txt" ]; then
-    info "[***] URL retrived with katana\n"
+    info "URL retrived with katana\n"
 else
     err "[-] No URL Found"
 fi
@@ -165,9 +181,9 @@ fi
 ok "Extracting Vectors from Katana Output..\n"
 grep -Ei "\.js$" "$output/katana.txt" | sort -u > "$output/js_urls.txt"
 if [ -s "$output/js_urls.txt" ]; then
-    info "[***] JS Files retrived"
+    info "JS Files retrived"
 else
-    err "[-] No JS Files Found"
+    err "No JS Files Found"
     rm "$output/js_urls.txt"
 fi
 
@@ -178,9 +194,9 @@ fi
 #ok "Extracting URLs with parameters..."
 grep "?" "$output/katana.txt" | sort -u > "$output/params_urls.txt"
 if [ -s "$output/params_urls.txt" ]; then
-    info "[***] Parameters retrived\n"
+    info "Parameters retrived\n"
 else
-    err "[-] No JS Files Found\n"
+    err "No JS Files Found\n"
     rm "$output/js_urls.txt"
 fi
 
@@ -188,7 +204,7 @@ fi
 # 9. Extract files by extensions
 # ---------------------------
 
-ok "Extracting files by extension..."
+ok "Extracting files by extension...\n"
 
 extract_file() {
     ext="$1"
@@ -204,6 +220,60 @@ extract_file "txt"
 extract_file "html"
 extract_file "config"
 extract_file "conf"
+
+#------------------------------------------------------
+#Secret Finder
+#------------------------------------------------------
+ok "Running SecretFinder...."
+if [ -s "$output/js_urls.txt" ]; then
+    input_file="$output/js_urls.txt"
+    info "JS FILES is PRESENT"
+    output_dir="secretfinder_output"
+    mkdir -p "$output_dir"
+    while IFS= read -r url; do
+        [ -z "$url" ] && continue
+
+        # Safe filename
+        filename=$(echo "$url" | sed 's|https\?://||' | sed 's|/|_|g')
+        outfile="$output_dir/${filename}.txt"
+
+        echo "Scanning: $url"
+
+    # Temporary output
+        temp_out=$(mktemp)
+
+    # Run SecretFinder
+        python3 /home/kali/Tools/SecretFinder/SecretFinder.py -i "$url" -o cli > "$temp_out"
+
+    # -------------------------------
+    # If output has only 1 line → discard
+    # -------------------------------
+        if [ "$(wc -l < "$temp_out")" -eq 1 ]; then
+            echo "➤ No secrets for $url — discarded"
+            rm "$temp_out"
+            continue
+        fi
+
+        # Otherwise save result
+        mv "$temp_out" "$outfile"
+        echo "➤ Saved: $outfile"
+
+    done < "$input_file"
+else
+    err "No JS Files Present\n"
+fi
+# ---------------------------------
+# FINAL CHECK: ANY FILES GENERATED?
+# ---------------------------------
+if [ -d "secretfinder_output" ]; then
+    if [ "$(ls -1 "$output_dir" | wc -l)" -eq 0 ]; then
+        err "NO SECRETS FOUND"
+    # Optional: remove empty directory
+        rmdir "$output_dir"
+    else
+        ok "SECRETS FOUND — Results saved in: $output_dir"
+    fi
+fi
 
 # ---------------------------
 # Summary
