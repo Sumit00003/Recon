@@ -4,13 +4,13 @@ A complete reconnaissance pipeline with AI-powered reporting.
 
 # Banner
 
-██████╗ ███████╗ ██████╗ ██████╗ ███╗   ██╗
-██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║
-██████╔╝█████╗  ██║     ██║   ██║██╔██╗ ██║
-██╔══██╗██╔══╝  ██║     ██║   ██║██║╚██╗██║
-██║  ██║███████╗╚██████╗╚██████╔╝██║ ╚████║
-╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝
-           Automated Recon + AI
+██████╗ ███████╗ ██████╗ ██████╗ ███╗   ██╗  
+██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║  
+██████╔╝█████╗  ██║     ██║   ██║██╔██╗ ██║  
+██╔══██╗██╔══╝  ██║     ██║   ██║██║╚██╗██║  
+██║  ██║███████╗╚██████╗╚██████╔╝██║ ╚████║  
+╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝  
+           Automated Recon + AI  
 
 # Overview
 
@@ -36,20 +36,19 @@ The script generates an advanced Markdown report that includes:
 ✔ Business logic mapping of subdomains  
 ✔ CVE-based checks based on server type  
 
-
 # AI do
 
-Script analyzes:  
+- Script analyzes:  
 1. HTTPX Output  
 2. URL & Parameter Analysis  
 3. Combined Next-Steps Strategy  
 
-Requirements  
+- Requirements  
 
-Install dependencies:  
+****Install dependencies:  
 `pip install langchain_groq langchain-core python-dotenv`
 
-Set environment variable:
+****Set environment variable:
 `export GROQ_API_KEY="your_api_key"`
 
 
@@ -57,12 +56,9 @@ Set environment variable:
 
 `./recon.sh target.com output/`
 
-
 # Screenshot
 
-![SS1](/home/kali/Pictures/Selection_001.avif)
 
-![SS2](/home/kali/Pictures/Selection_002.avif)
 
 
 This project is intended for authorized security testing only.
